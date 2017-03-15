@@ -11,8 +11,14 @@ read fname
 # Make reverse complement of backward primer seq
 ./usearch -fastx_revcomp "${fname}_match_bprimer.fastq" -label_suffix _RC -fastqout "${fname}_match_bprimer_rc.fastq"
 
+#Second filtering
+./usearch -search_oligodb "${fname}_match_primer.fastq" -db bprimer_rc.fa -strand plus \
+  -maxdiffs 3 -matchedfq "${fname}_match_fbprimer.fastq"
+./usearch -search_oligodb "${fname}_match_bprimer_rc.fastq" -db primer.fa -strand plus \
+  -maxdiffs 3 -matchedfq "${fname}_match_fbprimer2.fastq"
+
 # Merge two files
-cat "${fname}_match_primer.fastq" "${fname}_match_bprimer_rc.fastq" > "${fname}_concat.fastq"
+cat "${fname}_match_fbprimer.fastq" "${fname}_match_fbprimer2.fastq" > "${fname}_concat.fastq"
 
 # Filter fastq file and truncate 200 length
 ./usearch -fastq_filter "$PWD/${fname}_concat.fastq" -fastq_maxee 0.5 -fastq_trunclen 200  -fastaout "${fname}_match_primer.fa"
