@@ -28,7 +28,7 @@ shell_exec("mkdir DNA/".$randomFolder);
 
 
 if(file_put_contents($uploaddir.$randomFolder.'/'.$name, $decodedData)) {
-    echo $randomFolder.":uploaded successfully";
+    echo $randomFolder.'/'.$name.":uploaded successfully";
 }
 else {
     // Show an error message should something go wrong.

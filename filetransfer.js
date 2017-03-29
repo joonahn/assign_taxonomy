@@ -11,6 +11,7 @@ $(document).ready(function() {
 	
 	// Get all of the data URIs and put them in an array
 	var dataArray = [];
+	var uploadedArray = [];
 	
 	// Bind the drop event to the dropzone.
 	$('#drop-files').bind('drop', function(e) {
@@ -27,88 +28,35 @@ $(document).ready(function() {
 		
 		// For each file
 		$.each(files, function(index, file) {
-						
-			// Some error messaging
-			// if (!files[index].type.match('image.*')) {
-				
-			// 	if(errMessage == 0) {
-			// 		$('#drop-files').html('Hey! Images only');
-			// 		++errMessage
-			// 	}
-			// 	else if(errMessage == 1) {
-			// 		$('#drop-files').html('Stop it! Images only!');
-			// 		++errMessage
-			// 	}
-			// 	else if(errMessage == 2) {
-			// 		$('#drop-files').html("Can't you read?! Images only!");
-			// 		++errMessage
-			// 	}
-			// 	else if(errMessage == 3) {
-			// 		$('#drop-files').html("Fine! Keep dropping non-images.");
-			// 		errMessage = 0;
-			// 	}
-			// 	return false;
-			// }
-			
-			// Check length of the total image elements
-			
-			// if($('#dropped-files > .image').length < maxFiles) {
-			// 	// Change position of the upload button so it is centered
-			// 	var imageWidths = ((220 + (40 * $('#dropped-files > .image').length)) / 2) - 20;
-			// 	$('#upload-button').css({'left' : imageWidths+'px', 'display' : 'block'});
-			// }
-
 			$('#upload-button').css({'display' : 'block'});
 			
 			// Start a new instance of FileReader
 			var fileReader = new FileReader();
 				
-				// When the filereader loads initiate a function
-				fileReader.onload = (function(file) {
-					
-					return function(e) { 
-						
-						// Push the data URI into an array
-						dataArray.push({name : file.name, value : this.result});
-						
-						// Move each image 40 more pixels across
-						// z = z+40;
-						// var image = this.result;
-						
-						
-						// Just some grammatical adjustments
-						if(dataArray.length == 1) {
-							$('#upload-button span').html("1 file to be uploaded");
-						} else {
-							$('#upload-button span').html(dataArray.length+" files to be uploaded");
-						}
-						// Place extra files in a list
-						// if($('#dropped-files > .image').length < maxFiles) { 
-						// 	// Place the image inside the dropzone
-						// 	$('#dropped-files').append('<div class="image" style="left: '+z+'px; background: url('+image+'); background-size: cover;"> </div>'); 
-						// }
-						// else {
-							
-						// 	$('#extra-files .number').html('+'+($('#file-list li').length + 1));
-						// 	// Show the extra files dialogue
-						// 	$('#extra-files').show();
-							
-						// 	// Start adding the file name to the file list
-						// 	$('#extra-files #file-list ul').append('<li>'+file.name+'</li>');
-							
-						// }
-					}; 
-					
-				})(files[index]);
+			// When the filereader loads initiate a function
+			fileReader.onload = (function(file) {
 				
+				return function(e) { 
+					
+					// Push the data URI into an array
+					dataArray.push({name : file.name, value : this.result});
+					
+					// Just some grammatical adjustments
+					if(dataArray.length == 1) {
+						$('#upload-button span').html("1 file to be uploaded");
+					} else {
+						$('#upload-button span').html(dataArray.length+" files to be uploaded");
+					}
+				}; 
+			})(files[index]);
+			
 			// For data URI purposes
 			fileReader.readAsDataURL(file);
-	
-		});
-		
 
+		});
 	});
-	
+
+	// Reset Forms
 	function restartFiles() {
 	
 		// This is to set the loading bar back to its default state
@@ -121,7 +69,6 @@ $(document).ready(function() {
 		// appropriate. We'll also make the upload button disappear
 		
 		$('#upload-button').hide();
-		$('#dropped-files > .image').remove();
 		$('#extra-files #file-list li').remove();
 		$('#extra-files').hide();
 		$('#uploaded-holder').hide();
@@ -132,10 +79,74 @@ $(document).ready(function() {
 		
 		return false;
 	}
+
+	// Run shellscript
+	function makeTaxAssign() {
+		// $('#result-link span').html('wait a second...');
+		// $.post('DNA/shell.php', post_filelink, function(data) {
+
+		// });
+
+		var totalPercent = 100 / uploadedArray.length;
+		var x = 0;
+		var y = 0;
+		var toArchiveList = {};
+
+		// Exception Handling
+		if (dataArray.length != uploadedArray.length)
+		{
+			$('#loading-content').html('upload failed!');
+			setTimeout(restartFiles, 500);
+		}
+
+		$('#loading-content').html('Assigning taxonomy of '+ uploadedArray[0].name);
+		$.each(uploadedArray, function(index, value) {	
+			$.post('DNA/shell.php', uploadedArray[index], function(data) {
+				
+				var fileName = uploadedArray[index].name;
+				++x;
+
+				// Change the bar to represent how much has loaded
+				$('#loading-bar .loading-color').css({'width' : totalPercent*(x)+'%'});
+				
+				// TODO: Add toArchiveList
+				toArchiveList[(x-1).toString()] = data;
+
+
+				if(totalPercent*(x) == 100) {
+					// Show the upload is complete
+					$('#loading-content').html('Assigning taxonomy Complete!');
+					
+					// Reset everything when the loading is completed
+					// setTimeout(makeTaxAssign, 500);
+					// TODO: archive this
+					toArchiveList["count"] = x;
+					console.log(toArchiveList);
+					setTimeout(archive, 500);
+
+				} else if(totalPercent*(x) < 100) {
+				
+					// Show that the files are uploading
+					$('#loading-content').html('Assigning taxonomy of '+ fileName);
+				}
+
+				
+			});
+		});
+
+	}
+
+	function archive() {
+
+	}
 	
+	// Upload
 	$('#upload-button .upload').click(function() {
 		
 		$("#loading").show();
+		$('#uploaded-holder').hide();
+		$('#upload-button').hide();
+
 		var totalPercent = 100 / dataArray.length;
 		var x = 0;
 		var y = 0;
@@ -157,7 +168,7 @@ $(document).ready(function() {
 					$('#loading-content').html('Uploading Complete!');
 					
 					// Reset everything when the loading is completed
-					setTimeout(restartFiles, 500);
+					setTimeout(makeTaxAssign, 500);
 					
 				} else if(totalPercent*(x) < 100) {
 				
@@ -181,6 +192,7 @@ $(document).ready(function() {
 					}
 					
 					window.localStorage.setItem(y, realData);
+					uploadedArray.push({name : dataSplit[0].split('/')[1], folder : dataSplit[0].split('/')[0]});
 				
 				} else {
 					$('#uploaded-files').append('<li><a href="images/'+data+'. File Name: '+dataArray[index].name+'</li>');

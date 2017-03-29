@@ -40,6 +40,7 @@ body {
 	z-index: 9999;
 	width: 210px;
 	display: none;
+	
 }
 
 #dropped-files .image {
