@@ -1,10 +1,17 @@
 #Get filename
 echo "type filename:"
-read fname
+# read fname
+fname="001"
 
 #remove
 rm -rf output
 rm -rf rep_set_align
+rm -rf blast_output
+rm -rf pynast_output
+rm -rf uclust_output
+rm -rf parallel_blast
+rm -rf rdp_output
+rm -rf biom_otu_pick
 rm "${fname}_match_primer.fastq"
 rm "${fname}_match_bprimer.fastq"
 rm "${fname}_match_bprimer_rc.fastq"
