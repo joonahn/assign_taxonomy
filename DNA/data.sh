@@ -3,10 +3,8 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 GREEN='\e[32m'
 
-#Get filename
-echo "type filename:"
 #read fname
-fname="001"
+fname=$1
 
 # find backward primer and forward primer
 ./usearch -search_oligodb "${fname}.fastq" -db primer.fa -strand plus \
@@ -27,59 +25,56 @@ fname="001"
 cat "${fname}_match_fbprimer.fastq" "${fname}_match_fbprimer2.fastq" > "${fname}_concat.fastq"
 
 # Filter fastq file and truncate 200 length
-./usearch -fastq_filter "$PWD/${fname}_concat.fastq" -fastq_maxee 0.5 -fastaout "${fname}_match_primer.fa"
+./usearch -fastq_filter "${fname}_concat.fastq" -fastq_maxee 0.5 -fastaout "${fname}_match_primer.fa"
 
 # dereplication
-./usearch -derep_fulllength "$PWD/${fname}_match_primer.fa" -fastaout "${fname}_match_primer_derep.fa" -sizeout
+./usearch -derep_fulllength "${fname}_match_primer.fa" -fastaout "${fname}_match_primer_derep.fa" -sizeout
 
 # sort and delete singleton
-./usearch -sortbysize "$PWD/${fname}_match_primer_derep.fa" -fastaout "${fname}_match_primer_sorted.fa" -minsize 2
+./usearch -sortbysize "${fname}_match_primer_derep.fa" -fastaout "${fname}_match_primer_sorted.fa" -minsize 2
 
 # Clustering
-./usearch -cluster_otus "$PWD/${fname}_match_primer_sorted.fa" -otus "${fname}_otus1.fa"
+./usearch -cluster_otus "${fname}_match_primer_sorted.fa" -otus "${fname}_otus1.fa"
 
 # activate qiime
 source "/home/qiime/anaconda2/bin/activate" qiime1
 echo -e "${RED}activate succeeded${NC}"
 
 # Clustering (for making biom file)
-pick_otus.py -i "$PWD/${fname}_match_primer_sorted.fa" -o "biom_otu_pick"
+pick_otus.py -i "${fname}_match_primer_sorted.fa" -o "biom_otu_pick"
 
 # map
-./usearch -usearch_global "$PWD/${fname}_match_primer.fa" -db "$PWD/${fname}_otus1.fa" -strand plus -id 0.97 -uc "${fname}_map.uc"
+./usearch -usearch_global "${fname}_match_primer.fa" -db "${fname}_otus1.fa" -strand plus -id 0.97 -uc "${fname}_map.uc"
 
 # Assign taxonomy
-assign_taxonomy.py -i "$PWD/${fname}_otus1.fa" -o output
-echo -e "${RED}assign taxonomy succeeded${NC}"
+# assign_taxonomy.py -i "${fname}_otus1.fa" -o output
+# echo -e "${RED}assign taxonomy succeeded${NC}"
 
 # Parallel Assign taxonomy with blast
-parallel_assign_taxonomy_blast.py -i "$PWD/${fname}_otus1.fa" -o blast_output
-echo -e "${RED}parallel_assign_taxonomy_blast succeeded${NC}"
+# parallel_assign_taxonomy_blast.py -i "${fname}_otus1.fa" -o blast_output
+# echo -e "${RED}parallel_assign_taxonomy_blast succeeded${NC}"
 
 # Parallel Assign taxonomy with uclust
-parallel_assign_taxonomy_uclust.py -i "$PWD/${fname}_otus1.fa" -o uclust_output
-echo -e "${RED}parallel_assign_taxonomy_uclust succeeded${NC}"
-
-# Parallel align sequence with pynast
-parallel_align_seqs_pynast.py -i "$PWD/${fname}_otus1.fa" -o pynast_output
-echo -e "${RED}parallel_align_seqs_pynast succeeded${NC}"
+# parallel_assign_taxonomy_uclust.py -i "${fname}_otus1.fa" -o uclust_output
+# echo -e "${RED}parallel_assign_taxonomy_uclust succeeded${NC}"
 
 # Parallel Assign taxonomy with pynast
-parallel_blast.py -i "$PWD/${fname}_otus1.fa" -o parallel_blast
-echo -e "${RED}parallel_blast succeeded${NC}"
-
-# Parallel Assign taxonomy with rdp -- DO NOT UNCOMMENT THIS
-# parallel_assign_taxonomy_rdp.py --rdp_max_memory 6000 -i "$PWD/${fname}_otus1.fa" -o rdp_output
-# echo -e "${RED}parallel_assign_taxonomy_rdp succeeded${NC}"
+# parallel_blast.py -i "${fname}_otus1.fa" -o parallel_blast
+# echo -e "${RED}parallel_blast succeeded${NC}"
 
 # Training RDP classifier
-echo -e "${GREEN}parallel_assign_taxonomy_rdp started${NC}"
-assign_taxonomy.py -i "$PWD/${fname}_otus1.fa" \
- -t gg_otus_4feb2011/taxonomies/greengenes_tax_rdp_train.txt \
- -r gg_otus_4feb2011/rep_set/gg_97_otus_4feb2011.fasta \
- -o rdp_output -m rdp
-echo -e "${RED}parallel_assign_taxonomy_rdp succeeded${NC}"
+# echo -e "${GREEN}parallel_assign_taxonomy_rdp started${NC}"
+# export RDP_JAR_PATH="/home/qiime/app/rdp_classifier_2.2/rdp_classifier-2.2.jar"
+# assign_taxonomy.py -i "${fname}_otus1.fa" \
+#  -t "./SILVA_128_QIIME_release/taxonomy/16S_only/97/consensus_taxonomy_7_levels.txt" \
+#  -r "./SILVA_128_QIIME_release/rep_set/rep_set_16S_only/97/97_otus_16S.fasta" \
+#  -c 0.2 \
+#  -o "${fname}_rdp_output" -m rdp \
+#  --rdp_max_memory 16000
 
-# Align sequence on QIIME
-# align_seqs.py -i "$PWD/${fname}_otus1.fa" -o rep_set_align
-# echo "align sequence succeeded"
+export RDP_JAR_PATH="/home/qiime/app/rdp_classifier_2.2/rdp_classifier-2.2.jar"
+assign_taxonomy.py -i "${fname}_otus1.fa" \
+ -t ./gg_otus_4feb2011/taxonomies/greengenes_tax.txt \
+ -r ./gg_otus_4feb2011/rep_set/gg_97_otus_4feb2011.fasta \
+ -c 0.2 \
+ -o "${fname}_rdp_output" -m rdp

@@ -12,6 +12,7 @@ $(document).ready(function() {
 	// Get all of the data URIs and put them in an array
 	var dataArray = [];
 	var uploadedArray = [];
+	var toArchiveList = {};
 	
 	// Bind the drop event to the dropzone.
 	$('#drop-files').bind('drop', function(e) {
@@ -75,6 +76,8 @@ $(document).ready(function() {
 	
 		// And finally, empty the array/set z to -40
 		dataArray.length = 0;
+		uploadedArray.length = 0;
+		toArchiveList = {};
 		z = -40;
 		
 		return false;
@@ -82,15 +85,12 @@ $(document).ready(function() {
 
 	// Run shellscript
 	function makeTaxAssign() {
-		// $('#result-link span').html('wait a second...');
-		// $.post('DNA/shell.php', post_filelink, function(data) {
-
-		// });
 
 		var totalPercent = 100 / uploadedArray.length;
 		var x = 0;
 		var y = 0;
-		var toArchiveList = {};
+
+		$('#loading-bar .loading-color').css({'width' : 0 +'%'});
 
 		// Exception Handling
 		if (dataArray.length != uploadedArray.length)
@@ -138,6 +138,27 @@ $(document).ready(function() {
 
 	function archive() {
 
+		$('#loading-bar .loading-color').css({'width' : 0 +'%'});
+
+		// Exception Handling
+		if (Object.keys(toArchiveList).length != (uploadedArray.length + 1))
+		{
+			$('#loading-content').html('Assigning taxonomies failed!');
+			setTimeout(restartFiles, 500);
+		}
+
+		$('#loading-content').html('zipping taxonomy assign files');
+		$.post('DNA/archive.php', toArchiveList)
+		  .done(function(data) {
+			$('#loading-content').html('zipping succeeded');
+			$('#result-link span').html('the link is <a href=./DNA/'+data+'>'+data+'</a>');
+			setTimeout(restartFiles, 500);
+		})
+		.fail(function() {
+			$('#loading-content').html('zipping failed');
+			setTimeout(restartFiles, 500);
+		});
+
 	}
 	
 	// Upload
@@ -146,6 +167,7 @@ $(document).ready(function() {
 		$("#loading").show();
 		$('#uploaded-holder').hide();
 		$('#upload-button').hide();
+		$('#result-link span').html("");
 
 		var totalPercent = 100 / dataArray.length;
 		var x = 0;

@@ -23,3 +23,4 @@ rm "${fname}_otus1.fa"
 rm "${fname}_map.uc"
 rm "${fname}_match_fbprimer.fastq"
 rm "${fname}_match_fbprimer2.fastq"
+find ./ -maxdepth 1 -type d -regex '.*/[a-z0-9]+' | xargs rm -rf
