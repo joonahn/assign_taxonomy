@@ -5,6 +5,12 @@ GREEN='\e[32m'
 
 #read fname
 fname=$1
+primerseq=$2
+matchop=$3
+taxalg=$4
+rdpdb=$5
+conflevel=$6
+taxlevel=$7
 
 # find backward primer and forward primer
 ./usearch -search_oligodb "${fname}.fastq" -db primer.fa -strand plus \

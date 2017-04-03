@@ -265,3 +265,9 @@ body {
 #uploaded-files a {
 	color: #1bacbf;
 }
+
+.checkbox-group {
+	border-radius: 5px;	
+	border: 1px solid #dadada;
+	padding: 10px;
+}

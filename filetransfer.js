@@ -13,6 +13,9 @@ $(document).ready(function() {
 	var dataArray = [];
 	var uploadedArray = [];
 	var toArchiveList = {};
+	var taxAssignOption = {};
+
+	$('#checkFwd').prop('checked', true);
 	
 	// Bind the drop event to the dropzone.
 	$('#drop-files').bind('drop', function(e) {
@@ -78,6 +81,7 @@ $(document).ready(function() {
 		dataArray.length = 0;
 		uploadedArray.length = 0;
 		toArchiveList = {};
+		taxAssignOption = {};
 		z = -40;
 		
 		return false;
@@ -101,7 +105,9 @@ $(document).ready(function() {
 
 		$('#loading-content').html('Assigning taxonomy of '+ uploadedArray[0].name);
 		$.each(uploadedArray, function(index, value) {	
-			$.post('DNA/shell.php', uploadedArray[index], function(data) {
+			$.post('DNA/shell.php', 
+				combineJSON(uploadedArray[index],taxAssignOption), 
+				function(data) {
 				
 				var fileName = uploadedArray[index].name;
 				++x;
@@ -160,9 +166,34 @@ $(document).ready(function() {
 		});
 
 	}
+
+	function validateForm() {
+		if ((!($('#checkFwd').is(":checked")))
+			 && (!($('#checkRev').is(":checked"))))
+		{
+			alert('One of Fwd seq, Rev seq check boxes should be checked.');
+			return false;
+		}
+
+	    var x = $("#optionForm").serializeArray();
+	    $.each(x, function(i, field){
+	        taxAssignOption[field.name]=field.value;
+	    });
+		return true;
+	}
+
+	function combineJSON(obj1, obj2) {
+		var result = {};
+		for(var key in obj1) result[key] = obj1[key];
+		for(var key in obj2) result[key] = obj2[key];	
+		return result;	
+	}
 	
 	// Upload
 	$('#upload-button .upload').click(function() {
+
+		if(!validateForm())
+			return false;
 		
 		$("#loading").show();
 		$('#uploaded-holder').hide();
