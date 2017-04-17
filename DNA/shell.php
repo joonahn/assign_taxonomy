@@ -27,6 +27,6 @@
 
 
 	shell_exec("bash ./data.sh ".$shellarg." 2>&1");
-	echo $folder."/".$file_name_only."_rdp_output"."/".$file_name_only."_otus1_tax_assignments.txt";
+	echo $folder."/".$file_name_only."_tax_output"."/".$file_name_only."_otus1_tax_assignments.txt";
 
  ?>

@@ -12,23 +12,97 @@ rdpdb=$5
 conflevel=$6
 taxlevel=$7
 
-# find backward primer and forward primer
-./usearch -search_oligodb "${fname}.fastq" -db primer.fa -strand plus \
-  -maxdiffs 3 -matchedfq "${fname}_match_primer.fastq"
-./usearch -search_oligodb "${fname}.fastq" -db bprimer.fa -strand plus \
-  -maxdiffs 3 -matchedfq "${fname}_match_bprimer.fastq"
 
-# Make reverse complement of backward primer seq
-./usearch -fastx_revcomp "${fname}_match_bprimer.fastq" -label_suffix _RC -fastqout "${fname}_match_bprimer_rc.fastq"
 
-#Second filtering
-./usearch -search_oligodb "${fname}_match_primer.fastq" -db bprimer_rc.fa -strand plus \
-  -maxdiffs 3 -matchedfq "${fname}_match_fbprimer.fastq"
-./usearch -search_oligodb "${fname}_match_bprimer_rc.fastq" -db primer.fa -strand plus \
-  -maxdiffs 3 -matchedfq "${fname}_match_fbprimer2.fastq"
+if [[ $matchop == *"fwdrev"* ]]; then
+	if [[ $matchop == *"full"* ]]; then
 
-# Merge two files
-cat "${fname}_match_fbprimer.fastq" "${fname}_match_fbprimer2.fastq" > "${fname}_concat.fastq"
+		# find backward primer and forward primer
+		./usearch -search_oligodb "${fname}.fastq" -db "${primerseq}/primer.fa" -strand plus \
+		  -maxdiffs 3 -matchedfq "${fname}_match_primer.fastq"
+		./usearch -search_oligodb "${fname}.fastq" -db "${primerseq}/bprimer.fa" -strand plus \
+		  -maxdiffs 3 -matchedfq "${fname}_match_bprimer.fastq"
+
+		# Make reverse complement of backward primer seq
+		./usearch -fastx_revcomp "${fname}_match_bprimer.fastq" -label_suffix _RC -fastqout "${fname}_match_bprimer_rc.fastq"
+
+		#Second filtering
+		./usearch -search_oligodb "${fname}_match_primer.fastq" -db "${primerseq}/bprimer_rc.fa" -strand plus \
+		  -maxdiffs 3 -matchedfq "${fname}_match_fbprimer.fastq"
+		./usearch -search_oligodb "${fname}_match_bprimer_rc.fastq" -db "${primerseq}/primer.fa" -strand plus \
+		  -maxdiffs 3 -matchedfq "${fname}_match_fbprimer2.fastq"
+
+		# Merge two files
+		cat "${fname}_match_fbprimer.fastq" "${fname}_match_fbprimer2.fastq" > "${fname}_concat.fastq"
+
+	else
+
+		# find backward primer and forward primer
+		./usearch -search_oligodb "${fname}.fastq" -db "${primerseq}/primer.fa" -strand plus \
+		  -maxdiffs 3 -matchedfq "${fname}_match_primer.fastq"
+		./usearch -search_oligodb "${fname}.fastq" -db "${primerseq}/bprimer.fa" -strand plus \
+		  -maxdiffs 3 -matchedfq "${fname}_match_bprimer.fastq"
+
+		# Make reverse complement of backward primer seq
+		./usearch -fastx_revcomp "${fname}_match_bprimer.fastq" -label_suffix _RC -fastqout "${fname}_match_bprimer_rc.fastq"
+
+		# Merge two files
+		cat "${fname}_match_primer.fastq" "${fname}_match_bprimer_rc.fastq" > "${fname}_concat.fastq"
+
+	fi
+elif [[ $matchop == *"fwd"* ]]; then
+	if [[ $matchop == *"full"* ]]; then
+
+		# match with primer, bprimer_rc 
+		./usearch -search_oligodb "${fname}.fastq" -db "${primerseq}/primer.fa" -strand plus \
+		  -maxdiffs 3 -matchedfq "${fname}_match_primer.fastq"	
+		./usearch -search_oligodb "${fname}_match_primer.fastq" -db "${primerseq}/bprimer_rc.fa" -strand plus \
+		  -maxdiffs 3 -matchedfq "${fname}_match_fbprimer_rc.fastq"
+
+		# change filename
+		mv "${fname}_match_fbprimer_rc.fastq" "${fname}_concat.fastq"
+	else
+
+		# match with primer, bprimer_rc 
+		./usearch -search_oligodb "${fname}.fastq" -db "${primerseq}/primer.fa" -strand plus \
+		  -maxdiffs 3 -matchedfq "${fname}_match_primer.fastq"	
+
+		# change filename
+		mv "${fname}_match_primer.fastq" "${fname}_concat.fastq"
+
+	fi
+elif [[ $matchop == *"rev"* ]]; then
+	if [[ $matchop == *"full"* ]]; then
+
+		# match with bprimer, primer_rc 
+		./usearch -search_oligodb "${fname}.fastq" -db "${primerseq}/bprimer.fa" -strand plus \
+		  -maxdiffs 3 -matchedfq "${fname}_match_bprimer.fastq"	
+		./usearch -search_oligodb "${fname}_match_primer.fastq" -db "${primerseq}/primer_rc.fa" -strand plus \
+		  -maxdiffs 3 -matchedfq "${fname}_match_fbprimer_rc.fastq"
+
+		# Make reverse complement of backward primer seq
+		./usearch -fastx_revcomp "${fname}_match_fbprimer_rc.fastq" -label_suffix _RC -fastqout "${fname}_match_fbprimer_rc_rc.fastq"
+
+		# change filename
+		mv "${fname}_match_fbprimer_rc_rc.fastq" "${fname}_concat.fastq"
+	else
+
+		# match with primer, bprimer_rc 
+		./usearch -search_oligodb "${fname}.fastq" -db "${primerseq}/bprimer.fa" -strand plus \
+		  -maxdiffs 3 -matchedfq "${fname}_match_bprimer.fastq"	
+
+		# Make reverse complement of backward primer seq
+		./usearch -fastx_revcomp "${fname}_match_bprimer.fastq" -label_suffix _RC -fastqout "${fname}_match_bprimer_rc.fastq"
+
+		# change filename
+		mv "${fname}_match_bprimer_rc.fastq" "${fname}_concat.fastq"
+
+	fi
+else
+	# Error
+	echo "ERROR: match option is not specified"
+fi
+
 
 # Filter fastq file and truncate 200 length
 ./usearch -fastq_filter "${fname}_concat.fastq" -fastq_maxee 0.5 -fastaout "${fname}_match_primer.fa"
@@ -52,35 +126,45 @@ pick_otus.py -i "${fname}_match_primer_sorted.fa" -o "biom_otu_pick"
 # map
 ./usearch -usearch_global "${fname}_match_primer.fa" -db "${fname}_otus1.fa" -strand plus -id 0.97 -uc "${fname}_map.uc"
 
-# Assign taxonomy
-# assign_taxonomy.py -i "${fname}_otus1.fa" -o output
-# echo -e "${RED}assign taxonomy succeeded${NC}"
+# taxonomy assign
+if [[ $taxalg == *"RDP"* ]]; then
+	export RDP_JAR_PATH="/home/qiime/app/rdp_classifier_2.2/rdp_classifier-2.2.jar"
+	
+	if [[ $rdpdb == *"greengenes"* ]]; then
+		# tax assign with greengenes db
+		assign_taxonomy.py -i "${fname}_otus1.fa" \
+		 -t "./gg_otus_4feb2011/taxonomies/greengenes_tax.txt" \
+		 -r "./gg_otus_4feb2011/rep_set/gg_97_otus_4feb2011.fasta" \
+		 -c "${conflevel}" \
+		 -o "${fname}_tax_output" -m rdp
 
-# Parallel Assign taxonomy with blast
-# parallel_assign_taxonomy_blast.py -i "${fname}_otus1.fa" -o blast_output
-# echo -e "${RED}parallel_assign_taxonomy_blast succeeded${NC}"
+	elif [[ $rdpdb == *"silva"* ]]; then
+		# tax assign with silva db
+		assign_taxonomy.py -i "${fname}_otus1.fa" \
+		 -t "./SILVA_128_QIIME_release/taxonomy/16S_only/97/consensus_taxonomy_7_levels.txt" \
+		 -r "./SILVA_128_QIIME_release/rep_set/rep_set_16S_only/97/97_otus_16S.fasta" \
+		 -c "${conflevel}" \
+		 -o "${fname}_tax_output" -m rdp \
+		 --rdp_max_memory 16000
 
-# Parallel Assign taxonomy with uclust
-# parallel_assign_taxonomy_uclust.py -i "${fname}_otus1.fa" -o uclust_output
-# echo -e "${RED}parallel_assign_taxonomy_uclust succeeded${NC}"
+	elif [[ $rdpdb == *"unite"* ]]; then
+			#statements
+			echo "ERROR: Unimplemented"
+	else
+		# Error
+		echo "ERROR: RDP method is not specified"
+	fi
 
-# Parallel Assign taxonomy with pynast
-# parallel_blast.py -i "${fname}_otus1.fa" -o parallel_blast
-# echo -e "${RED}parallel_blast succeeded${NC}"
+elif [[ $taxalg == *"BLAST"* ]]; then
+	# tax assign with BLAST
+	parallel_assign_taxonomy_blast.py -i "${fname}_otus1.fa" \
+	 -o "${fname}_tax_output"
 
-# Training RDP classifier
-# echo -e "${GREEN}parallel_assign_taxonomy_rdp started${NC}"
-# export RDP_JAR_PATH="/home/qiime/app/rdp_classifier_2.2/rdp_classifier-2.2.jar"
-# assign_taxonomy.py -i "${fname}_otus1.fa" \
-#  -t "./SILVA_128_QIIME_release/taxonomy/16S_only/97/consensus_taxonomy_7_levels.txt" \
-#  -r "./SILVA_128_QIIME_release/rep_set/rep_set_16S_only/97/97_otus_16S.fasta" \
-#  -c 0.2 \
-#  -o "${fname}_rdp_output" -m rdp \
-#  --rdp_max_memory 16000
+elif [[ $taxalg == *"UCLUST"* ]]; then
+	# tax assign with BLAST
+	assign_taxonomy.py -i "${fname}_otus1.fa" \
+	 -o "${fname}_tax_output" -m uclust
 
-export RDP_JAR_PATH="/home/qiime/app/rdp_classifier_2.2/rdp_classifier-2.2.jar"
-assign_taxonomy.py -i "${fname}_otus1.fa" \
- -t ./gg_otus_4feb2011/taxonomies/greengenes_tax.txt \
- -r ./gg_otus_4feb2011/rep_set/gg_97_otus_4feb2011.fasta \
- -c 0.2 \
- -o "${fname}_rdp_output" -m rdp
+else
+	echo "ERROR: tax assign algorithm is not specified"
+fi

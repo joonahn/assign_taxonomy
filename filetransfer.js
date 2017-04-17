@@ -157,7 +157,8 @@ $(document).ready(function() {
 		$.post('DNA/archive.php', toArchiveList)
 		  .done(function(data) {
 			$('#loading-content').html('zipping succeeded');
-			$('#result-link span').html('the link is <a href=./DNA/'+data+'>'+data+'</a>');
+			$('#result-link').show();
+			$('#result-link span').html('RESULT: <a href=./DNA/'+data+'>'+data+'</a>');
 			setTimeout(restartFiles, 500);
 		})
 		.fail(function() {
@@ -198,6 +199,7 @@ $(document).ready(function() {
 		$("#loading").show();
 		$('#uploaded-holder').hide();
 		$('#upload-button').hide();
+		$('#result-link').hide();
 		$('#result-link span').html("");
 
 		var totalPercent = 100 / dataArray.length;
