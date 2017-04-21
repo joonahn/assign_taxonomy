@@ -9,7 +9,7 @@
 	}
 
 	foreach ($filenames as $filename) {
-		$cmdstr .= " {$filename}";
+		$cmdstr .= " \"{$filename}\"";
 	}
 
 	shell_exec($cmdstr);

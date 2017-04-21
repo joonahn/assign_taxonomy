@@ -11,6 +11,21 @@ taxalg=$4
 rdpdb=$5
 conflevel=$6
 taxlevel=$7
+otufolder=$8
+
+#shift 8
+shift 
+shift 
+shift 
+shift
+
+shift 
+shift 
+shift 
+shift
+
+
+
 
 
 
