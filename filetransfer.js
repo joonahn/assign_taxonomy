@@ -4,16 +4,31 @@ $(document).ready(function() {
 	// Drop the item in the drop box.
 	// jQuery.event.props.push('dataTransfer');
 	
-	var z = -40;
 	// The number of images to display
 	var maxFiles = 5;
 	var errMessage = 0;
 	
 	// Get all of the data URIs and put them in an array
 	var dataArray = [];
-	var uploadedArray = [];
-	var toArchiveList = {};
 	var taxAssignOption = {};
+
+	var ProgressBar = {
+		setPercent : function(val) {
+			$('#loading-bar .loading-color').css({'width' : val +'%'});
+		},
+		setHTML : function(htmltext) {
+			$('#loading-content').html(htmltext);
+		},
+		concatHTML : function(htmltext) {
+			$('#loading-content').html($('#loading-content').html() + htmltext);
+		},
+		hide: function() {
+			$('#loading').css({'display' : 'none'});
+		},
+		show: function() {
+			$("#loading").show();
+		}
+	};
 
 	$('#checkFwd').prop('checked', true);
 	
@@ -79,108 +94,187 @@ $(document).ready(function() {
 	
 		// And finally, empty the array/set z to -40
 		dataArray.length = 0;
-		uploadedArray.length = 0;
-		toArchiveList = {};
-		taxAssignOption = {};
-		z = -40;
 		
 		return false;
 	}
 
-	// Run shellscript
-	function makeTaxAssign() {
+	function uploadFiles(toBeUploadedArray, taxAssignOptions) {
 
-		var totalPercent = 100 / uploadedArray.length;
+		// Set UI
+		$("#loading").show();
+		$('#uploaded-holder').hide();
+		$('#upload-button').hide();
+		$('#result-link').hide();
+		$('#result-link span').html("");
+		ProgressBar.setHTML('Uploading '+toBeUploadedArray[0].name);
+		ProgressBar.setPercent(0);
+
+		var totalPercent = 100 / toBeUploadedArray.length;
 		var x = 0;
 		var y = 0;
-
-		$('#loading-bar .loading-color').css({'width' : 0 +'%'});
-
-		// Exception Handling
-		if (dataArray.length != uploadedArray.length)
-		{
-			$('#loading-content').html('upload failed!');
-			setTimeout(restartFiles, 500);
-		}
-
-		$('#loading-content').html('Assigning taxonomy of '+ uploadedArray[0].name);
-		$.each(uploadedArray, function(index, value) {	
-			$.post('DNA/shell.php', 
-				combineJSON(uploadedArray[index],taxAssignOption), 
-				function(data) {
-				
-				var fileName = uploadedArray[index].name;
+		var uploadFinishedArray = [];
+		
+		
+		$.each(toBeUploadedArray, function(index, item) {	
+			
+			$.post('upload.php', item, function(data) {
+			
+				var fileName = item.name;
 				++x;
-
-				// Change the bar to represent how much has loaded
-				$('#loading-bar .loading-color').css({'width' : totalPercent*(x)+'%'});
 				
-				// TODO: Add toArchiveList
-				toArchiveList[(x-1).toString()] = data;
-
-
-				if(totalPercent*(x) == 100) {
+				// Change the bar to represent how much has loaded
+				ProgressBar.setPercent(totalPercent*(x));
+				
+				if((x) == toBeUploadedArray.length) {
 					// Show the upload is complete
-					$('#loading-content').html('Assigning taxonomy Complete!');
-					
-					// Reset everything when the loading is completed
-					// setTimeout(makeTaxAssign, 500);
-					// TODO: archive this
-					toArchiveList["count"] = x;
-					console.log(toArchiveList);
-					setTimeout(archive, 500);
+					ProgressBar.setHTML('Uploading Complete!');
 
-				} else if(totalPercent*(x) < 100) {
+					// CALL
+					setTimeout(function() {makeOTUTable(uploadFinishedArray, taxAssignOptions);}, 500);
+					
+				} else if((x) < toBeUploadedArray.length) {
 				
 					// Show that the files are uploading
-					$('#loading-content').html('Assigning taxonomy of '+ fileName);
+					ProgressBar.setHTML('Uploading '+fileName);
+					
 				}
-
+				
+				// Show a message showing the file URL.
+				var dataSplit = data.split(':');
+				if(dataSplit[1] == 'uploaded successfully') {
+					// Upload succeeded
+					uploadFinishedArray.push({name : dataSplit[0].split('/')[1], folder : dataSplit[0].split('/')[0]});
+				} else {
+					// Upload failed
+					printMSG("ERROR: file " + fileName + " upload failed");
+				}
 				
 			});
 		});
-
+		return false;
 	}
 
-	function archive() {
+	function makeOTUTable(uploadFinishedArray, taxAssignOptions) {
 
-		$('#loading-bar .loading-color').css({'width' : 0 +'%'});
+		ProgressBar.setPercent(0);
+		ProgressBar.setHTML('Making OTU Table is on going');
+		var OTUTbl = ""
 
-		// Exception Handling
-		if (Object.keys(toArchiveList).length != (uploadedArray.length + 1))
+		if (0 == uploadFinishedArray.length)
 		{
-			$('#loading-content').html('Assigning taxonomies failed!');
-			setTimeout(restartFiles, 500);
+			ProgressBar.setHTML('upload failed!');
+			setTimeout(restartFiles(), 500);
 		}
 
-		$('#loading-content').html('zipping taxonomy assign files');
-		$.post('DNA/archive.php', toArchiveList)
+		$.post('DNA/makeotu.php', 
+			combineJSON(makeOTUTarget(uploadFinishedArray),taxAssignOptions), 
+			function(data) {
+			
+			// Change the bar to represent how much has loaded
+			ProgressBar.setPercent(100);
+			
+			// Set OTUTable
+			OTUTbl = data;
+
+			// Show the upload is complete
+			ProgressBar.setHTML('Making OTU Table Complete!');
+
+			// CALL
+			setTimeout(function() {makeTaxAssign(OTUTbl, taxAssignOptions);}, 500);
+		});
+	}
+
+	function makeTaxAssign(OTUTbl, taxAssignOptions) {
+
+		var toBeArchivedArray = {};
+		var x = 0;
+
+		ProgressBar.setPercent(0);
+
+		// Exception Handling
+		if (OTUTbl == "")
+		{
+			ProgressBar.setHTML('upload failed!');
+			setTimeout(restartFiles(), 500);
+			return;
+		}
+
+		taxAssignOptions['OTUTbl'] = OTUTbl;
+		ProgressBar.setHTML('Assigning taxonomy');
+
+
+		$.post('DNA/taxassn.php', taxAssignOptions, 
+			function(data) {
+			
+			// TODO: Add toArchiveList
+			if (data == "ERROR")
+			{
+				printMSG("ERROR: assigning taxonomy failed");
+				setTimeout(restartFiles(), 500);
+			}
+			else
+			{
+				ProgressBar.setPercent(100);
+				toBeArchivedArray['0'] = OTUTbl + '/otus1.txt';
+				// TODO: EDIT BELOW!!!!!!!!!!!!!
+				toBeArchivedArray['1'] = OTUTbl + '/tax_assign_result_here.txt';
+				toBeArchivedArray["count"] = 2;
+				// Show the upload is complete
+				ProgressBar.setHTML('Assigning taxonomy Complete!');
+				console.log(toBeArchivedArray);
+				setTimeout(function() {archive(toBeArchivedArray);}, 500);
+			}
+			
+		});
+		
+	}
+
+	function archive(toBeArchivedArray) {
+
+		ProgressBar.setPercent(0);	
+
+		// Exception Handling
+		if (Object.keys(toBeArchivedArray).length < 2)
+		{
+			ProgressBar.setHTML('Assigning taxonomies failed!');
+			setTimeout(restartFiles(), 500);
+		}
+
+		ProgressBar.setHTML('zipping taxonomy assign files');
+		$.post('DNA/archive.php', toBeArchivedArray)
 		  .done(function(data) {
-			$('#loading-content').html('zipping succeeded');
-			$('#result-link').show();
-			$('#result-link span').html('RESULT: <a href=./DNA/'+data+'>'+data+'</a>');
-			setTimeout(restartFiles, 500);
+
+		  	ProgressBar.setPercent(100);
+			ProgressBar.setHTML('zipping succeeded');
+
+			printMSG('RESULT: <a href=./DNA/'+data+'>'+data+'</a>');
+
+			// Fill uploaded data form 
+			var realData = '<li><a href=./DNA/'+data+'>'+data+'</a> uploaded successfully </li>';
+			$('#uploaded-files').append('<li><a href="images/'+dataSplit[0]+'">'+fileName+'</a> '+dataSplit[1]+'</li>');
+			window.localStorage.setItem(window.localStorage.length, realData);
+
 		})
 		.fail(function() {
-			$('#loading-content').html('zipping failed');
-			setTimeout(restartFiles, 500);
+			ProgressBar.setHTML('zipping failed');
+			setTimeout(restartFiles(), 500);
 		});
-
 	}
 
 	function validateForm() {
+		var taxAssignOptions = {};
 		if ((!($('#checkFwd').is(":checked")))
 			 && (!($('#checkRev').is(":checked"))))
 		{
 			alert('One of Fwd seq, Rev seq check boxes should be checked.');
-			return false;
+			return {};
 		}
 
 	    var x = $("#optionForm").serializeArray();
 	    $.each(x, function(i, field){
-	        taxAssignOption[field.name]=field.value;
+	        taxAssignOptions[field.name]=field.value;
 	    });
-		return true;
+		return taxAssignOptions;
 	}
 
 	function combineJSON(obj1, obj2) {
@@ -189,74 +283,41 @@ $(document).ready(function() {
 		for(var key in obj2) result[key] = obj2[key];	
 		return result;	
 	}
+
+	function makeOTUTarget(filelist) {
+		var OTUTarget = {};
+		$.each(filelist, function(index, value) {
+			OTUTarget[index.toString()] = value.folder + "/" + value.name;
+		});
+		OTUTarget["count"] = filelist.length;
+		return OTUTarget;
+	}
+
+	function printMSG(str) {
+		var innerHTMLtext = $('#result-link span').html();
+			$('#result-link').show();
+			if (innerHTMLtext != "")
+			{
+				$('#result-link span').html(innerHTMLtext + '<br>' + str);
+			} else
+			{
+				$('#result-link span').html(str);
+			}
+	}
 	
 	// Upload
 	$('#upload-button .upload').click(function() {
-
-		if(!validateForm())
-			return false;
-		
-		$("#loading").show();
-		$('#uploaded-holder').hide();
-		$('#upload-button').hide();
-		$('#result-link').hide();
 		$('#result-link span').html("");
-
-		var totalPercent = 100 / dataArray.length;
-		var x = 0;
-		var y = 0;
-		
-		$('#loading-content').html('Uploading '+dataArray[0].name);
-		
-		$.each(dataArray, function(index, file) {	
-			
-			$.post('upload.php', dataArray[index], function(data) {
-			
-				var fileName = dataArray[index].name;
-				++x;
-				
-				// Change the bar to represent how much has loaded
-				$('#loading-bar .loading-color').css({'width' : totalPercent*(x)+'%'});
-				
-				if(totalPercent*(x) == 100) {
-					// Show the upload is complete
-					$('#loading-content').html('Uploading Complete!');
-					
-					// Reset everything when the loading is completed
-					setTimeout(makeTaxAssign, 500);
-					
-				} else if(totalPercent*(x) < 100) {
-				
-					// Show that the files are uploading
-					$('#loading-content').html('Uploading '+fileName);
-				
-				}
-				
-				// Show a message showing the file URL.
-				var dataSplit = data.split(':');
-				if(dataSplit[1] == 'uploaded successfully') {
-					var realData = '<li><a href="images/'+dataSplit[0]+'">'+fileName+'</a> '+dataSplit[1]+'</li>';
-					
-					$('#uploaded-files').append('<li><a href="images/'+dataSplit[0]+'">'+fileName+'</a> '+dataSplit[1]+'</li>');
-				
-					// Add things to local storage 
-					if(window.localStorage.length == 0) {
-						y = 0;
-					} else {
-						y = window.localStorage.length;
-					}
-					
-					window.localStorage.setItem(y, realData);
-					uploadedArray.push({name : dataSplit[0].split('/')[1], folder : dataSplit[0].split('/')[0]});
-				
-				} else {
-					$('#uploaded-files').append('<li><a href="images/'+data+'. File Name: '+dataArray[index].name+'</li>');
-				}
-				
-			});
-		});
-		
-		return false;
+		var taxAssignOptions = validateForm();
+		if (Object.keys(taxAssignOptions).length == 0)
+		{
+			printMSG("You choose wrong options");
+			return restartFiles();
+		}
+		else
+		{
+			return uploadFiles(dataArray, taxAssignOptions);
+		}
 	});
 	
 	// Just some styling for the drop file container.

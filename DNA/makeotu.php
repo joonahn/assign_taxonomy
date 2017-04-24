@@ -1,7 +1,4 @@
 <?php 
-	// echo nl2br(shell_exec("bash ./data.sh 2>&1"));
-	$file = $_POST['name'];
-	$folder = $_POST['folder'];
 
 	// Argument filling
 	$a2 = $_POST['primerseq'];
@@ -17,7 +14,7 @@
 	$a4 = $_POST['taxalg'];
 	$a5 = $_POST['rdpdb'];
 	$a6 = $_POST['conflevel'];
-	$a7 = $_POST['taxlevel'];
+	$a7 = $_POST['trlen'];
 
 
 	$count = intval($_POST['count']);
@@ -33,12 +30,11 @@
 		$otutargets .= " \"{$filename}\"";
 	}
 
-
 	// Extract filename
 	$file_name_only = substr($file,0,strrpos($file,"."));
 
 	// Make shell arguments
-	$shellarg = "\"{$folder}/{$file_name_only}\" {$a2} {$a3} {$a4} {$a5} {$a6} {$a7} {$randomFolder} {$otutargets}";
+	$shellarg = "{$randomFolder} {$a2} {$a3} {$a4} {$a5} {$a6} {$a7} {$otutargets}";
 
 	// echo nl2br(shell_exec("bash ./data.sh ".$shellarg." 2>&1"));
 	shell_exec("bash ./makeotu.sh ".$shellarg." 2>&1");
