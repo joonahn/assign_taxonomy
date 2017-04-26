@@ -4,20 +4,13 @@ NC='\033[0m' # No Color
 GREEN='\e[32m'
 
 #read fname
-fname=$1
+ffolder=$1
 primerseq=$2
 matchop=$3
 taxalg=$4
 rdpdb=$5
 conflevel=$6
 trunlen=$7
-otufolder=$8
-
-# dereplication
-./usearch -derep_fulllength "${fname}_truncate.fa" -fastaout "${fname}_derep.fa" -sizeout
-
-# sort and delete singleton
-./usearch -sortbysize "${fname}_derep.fa" -fastaout "${fname}_derep_sorted.fa" -minsize 2
 
 # activate qiime
 source "/home/qiime/anaconda2/bin/activate" qiime1
@@ -29,19 +22,19 @@ if [[ $taxalg == *"RDP"* ]]; then
 	
 	if [[ $rdpdb == *"greengenes"* ]]; then
 		# tax assign with greengenes db
-		assign_taxonomy.py -i "${fname}_otus1.fa" \
+		assign_taxonomy.py -i "${ffolder}/otus.fa" \
 		 -t "./gg_otus_4feb2011/taxonomies/greengenes_tax.txt" \
 		 -r "./gg_otus_4feb2011/rep_set/gg_97_otus_4feb2011.fasta" \
 		 -c "${conflevel}" \
-		 -o "${fname}_tax_output" -m rdp
+		 -o "${ffolder}/tax_output" -m rdp
 
 	elif [[ $rdpdb == *"silva"* ]]; then
 		# tax assign with silva db
-		assign_taxonomy.py -i "${fname}_otus1.fa" \
+		assign_taxonomy.py -i "${ffolder}/otus.fa" \
 		 -t "./SILVA_128_QIIME_release/taxonomy/16S_only/97/consensus_taxonomy_7_levels.txt" \
 		 -r "./SILVA_128_QIIME_release/rep_set/rep_set_16S_only/97/97_otus_16S.fasta" \
 		 -c "${conflevel}" \
-		 -o "${fname}_tax_output" -m rdp \
+		 -o "${ffolder}/tax_output" -m rdp \
 		 --rdp_max_memory 16000
 
 	elif [[ $rdpdb == *"unite"* ]]; then
@@ -54,13 +47,13 @@ if [[ $taxalg == *"RDP"* ]]; then
 
 elif [[ $taxalg == *"BLAST"* ]]; then
 	# tax assign with BLAST
-	parallel_assign_taxonomy_blast.py -i "${fname}_otus1.fa" \
-	 -o "${fname}_tax_output"
+	parallel_assign_taxonomy_blast.py -i "${ffolder}/otus.fa" \
+	 -o "${ffolder}/tax_output"
 
 elif [[ $taxalg == *"UCLUST"* ]]; then
 	# tax assign with BLAST
-	assign_taxonomy.py -i "${fname}_otus1.fa" \
-	 -o "${fname}_tax_output" -m uclust
+	assign_taxonomy.py -i "${ffolder}/otus.fa" \
+	 -o "${ffolder}/tax_output" -m uclust
 
 else
 	echo "ERROR: tax assign algorithm is not specified"

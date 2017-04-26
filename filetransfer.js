@@ -164,6 +164,7 @@ $(document).ready(function() {
 		{
 			ProgressBar.setHTML('upload failed!');
 			setTimeout(restartFiles(), 500);
+			return;
 		}
 
 		$.post('DNA/makeotu.php', 
@@ -215,9 +216,9 @@ $(document).ready(function() {
 			else
 			{
 				ProgressBar.setPercent(100);
-				toBeArchivedArray['0'] = OTUTbl + '/otus1.txt';
+				toBeArchivedArray['0'] = OTUTbl + '/otus.txt';
 				// TODO: EDIT BELOW!!!!!!!!!!!!!
-				toBeArchivedArray['1'] = OTUTbl + '/tax_assign_result_here.txt';
+				toBeArchivedArray['1'] = data;
 				toBeArchivedArray["count"] = 2;
 				// Show the upload is complete
 				ProgressBar.setHTML('Assigning taxonomy Complete!');
@@ -238,6 +239,7 @@ $(document).ready(function() {
 		{
 			ProgressBar.setHTML('Assigning taxonomies failed!');
 			setTimeout(restartFiles(), 500);
+			return;
 		}
 
 		ProgressBar.setHTML('zipping taxonomy assign files');
@@ -251,9 +253,9 @@ $(document).ready(function() {
 
 			// Fill uploaded data form 
 			var realData = '<li><a href=./DNA/'+data+'>'+data+'</a> uploaded successfully </li>';
-			$('#uploaded-files').append('<li><a href="images/'+dataSplit[0]+'">'+fileName+'</a> '+dataSplit[1]+'</li>');
+			$('#uploaded-files').append('<li><a href=./DNA/'+data+'>'+data+'</a> uploaded successfully</li>');
 			window.localStorage.setItem(window.localStorage.length, realData);
-
+			setTimeout(restartFiles(), 500);
 		})
 		.fail(function() {
 			ProgressBar.setHTML('zipping failed');

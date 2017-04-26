@@ -130,7 +130,7 @@ for fname in "$@"; do
 
 	# Mark label
 	newlabel=$(echo $fname | grep -P '(?<=IonXpress_)\d{3}' -o)
-	sed -ie 's/>/>${newlabel}./g' "${fname}_truncate.fa"
+	sed -ie "s/>/>${newlabel}./g" "${fname}_truncate.fa"
 
 	cat "${fname}_truncate.fa" >> "${otufolder}/merged.fa"
 
@@ -144,11 +144,11 @@ done
 
 
 # Clustering
-./usearch -cluster_otus "${otufolder}/derep.fa" -otus "${otufolder}/otus1.fa" -minsize 2
+./usearch -cluster_otus "${otufolder}/derep.fa" -otus "${otufolder}/otus.fa" -minsize 2
 
 
 # Global usearch
-./usearch -usearch_global "${otufolder}/merged.fa" -db "${otufolder}/otus1.fa" -strand plus -id 0.97 -otutabout "${otufolder}/otus.txt"
+./usearch -usearch_global "${otufolder}/merged.fa" -db "${otufolder}/otus.fa" -strand plus -id 0.97 -otutabout "${otufolder}/otus.txt"
 
 # Output -- "${otufolder}/otus1.fa" and "${otufolder}/otus.txt"
 echo "${otufolder}"

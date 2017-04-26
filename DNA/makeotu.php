@@ -23,21 +23,22 @@
 	$otutargets = "";
 
 	for ($i = 0; $i < $count; $i++) {
-		array_push($filenames, strval($_POST[$i]));
+		// Extract filename
+		$file_path = strval($_POST[$i]);
+		$file_name_only = substr($file_path,0,strrpos($file_path,"."));
+		array_push($filenames, $file_name_only);
 	}
 
 	foreach ($filenames as $filename) {
 		$otutargets .= " \"{$filename}\"";
 	}
 
-	// Extract filename
-	$file_name_only = substr($file,0,strrpos($file,"."));
 
 	// Make shell arguments
 	$shellarg = "{$randomFolder} {$a2} {$a3} {$a4} {$a5} {$a6} {$a7} {$otutargets}";
 
 	// echo nl2br(shell_exec("bash ./data.sh ".$shellarg." 2>&1"));
-	shell_exec("bash ./makeotu.sh ".$shellarg." 2>&1");
+	(shell_exec("bash ./makeotu.sh ".$shellarg." 2>&1"));
 	echo $randomFolder;
 
  ?>

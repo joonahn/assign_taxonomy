@@ -1,7 +1,6 @@
 <?php 
 	// echo nl2br(shell_exec("bash ./data.sh 2>&1"));
-	$file = $_POST['name'];
-	$folder = $_POST['folder'];
+	$folder = $_POST['OTUTbl'];
 
 	// Argument filling
 	$a2 = $_POST['primerseq'];
@@ -24,10 +23,10 @@
 	$file_name_only = substr($file,0,strrpos($file,"."));
 
 	// Make shell arguments
-	$shellarg = "\"{$folder}/{$file_name_only}\" {$a2} {$a3} {$a4} {$a5} {$a6} {$a7} {$a8}";
+	$shellarg = "{$folder} {$a2} {$a3} {$a4} {$a5} {$a6} {$a7}";
 
 	// echo nl2br(shell_exec("bash ./data.sh ".$shellarg." 2>&1"));
 	shell_exec("bash ./taxassn.sh ".$shellarg." 2>&1");
-	echo $folder."/".$file_name_only."_tax_output"."/".$file_name_only."_otus1_tax_assignments.txt";
+	echo $folder."/tax_output/otus_tax_assignments.txt";
 
  ?>
