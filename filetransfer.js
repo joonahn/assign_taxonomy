@@ -106,51 +106,65 @@ $(document).ready(function() {
 		$('#upload-button').hide();
 		$('#result-link').hide();
 		$('#result-link span').html("");
-		ProgressBar.setHTML('Uploading '+toBeUploadedArray[0].name);
+		ProgressBar.setHTML('Uploading files...');
 		ProgressBar.setPercent(0);
 
 		var totalPercent = 100 / toBeUploadedArray.length;
 		var x = 0;
-		var y = 0;
+		var num_req = 0;
 		var uploadFinishedArray = [];
 		
-		
-		$.each(toBeUploadedArray, function(index, item) {	
+		var post_callback = function(data) {
 			
-			$.post('upload.php', item, function(data) {
+			++x;
 			
-				var fileName = item.name;
-				++x;
-				
-				// Change the bar to represent how much has loaded
-				ProgressBar.setPercent(totalPercent*(x));
-				
-				if((x) == toBeUploadedArray.length) {
-					// Show the upload is complete
-					ProgressBar.setHTML('Uploading Complete!');
+			// Change the bar to represent how much has loaded
+			ProgressBar.setPercent(totalPercent*(x));
+			
+			if((x) == toBeUploadedArray.length) {
+				// Show the upload is complete
+				ProgressBar.setHTML('Uploading Complete!');
 
-					// CALL
-					setTimeout(function() {makeOTUTable(uploadFinishedArray, taxAssignOptions);}, 500);
-					
-				} else if((x) < toBeUploadedArray.length) {
+				// CALL
+				setTimeout(function() {makeOTUTable(uploadFinishedArray, taxAssignOptions);}, 500);
 				
-					// Show that the files are uploading
-					ProgressBar.setHTML('Uploading '+fileName);
-					
-				}
+			} else if((x) < toBeUploadedArray.length) {
+			
+				// Show that the files are uploading
+				ProgressBar.setHTML('Uploading files...');
 				
-				// Show a message showing the file URL.
-				var dataSplit = data.split(':');
-				if(dataSplit[1] == 'uploaded successfully') {
-					// Upload succeeded
-					uploadFinishedArray.push({name : dataSplit[0].split('/')[1], folder : dataSplit[0].split('/')[0]});
-				} else {
-					// Upload failed
-					printMSG("ERROR: file " + fileName + " upload failed");
-				}
-				
-			});
-		});
+			}
+			
+			// Show a message showing the file URL.
+			var dataSplit = data.split(':');
+			if(dataSplit[1] == 'uploaded successfully') {
+				// Upload succeeded
+				uploadFinishedArray.push({name : dataSplit[0].split('/')[1], folder : dataSplit[0].split('/')[0]});
+			} else {
+				// Upload failed
+				printMSG("ERROR: file " + dataSplit[0] + " upload failed");
+			}
+
+			if ((num_req) < toBeUploadedArray.length)
+			{
+				++num_req;
+				$.post('upload.php', toBeUploadedArray[(num_req-1)], post_callback);
+			}
+		}
+		
+		if (toBeUploadedArray.length>2)
+		{
+			num_req = 3;
+			$.post('upload.php', toBeUploadedArray[0], post_callback);
+			$.post('upload.php', toBeUploadedArray[1], post_callback);
+			$.post('upload.php', toBeUploadedArray[2], post_callback);
+		}
+		else
+		{
+			num_req = 1;
+			$.post('upload.php', toBeUploadedArray[0], post_callback);
+		}
+		
 		return false;
 	}
 
@@ -225,9 +239,7 @@ $(document).ready(function() {
 				console.log(toBeArchivedArray);
 				setTimeout(function() {archive(toBeArchivedArray);}, 500);
 			}
-			
 		});
-		
 	}
 
 	function archive(toBeArchivedArray) {

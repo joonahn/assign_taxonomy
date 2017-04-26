@@ -32,7 +32,7 @@ if(file_put_contents($uploaddir.$randomFolder.'/'.$name, $decodedData)) {
 }
 else {
     // Show an error message should something go wrong.
-    echo "Something went wrong. Check that the file isn't corrupted";
+    echo $name.":uploading failed";
 }
 
 
