@@ -24,16 +24,28 @@ $decodedData = base64_decode($encodedData);
 // $randomName = substr_replace(sha1(microtime(true)), '', 12).'.'.$mime;
 $randomFolder = substr_replace(sha1(microtime(true)), '', 12);
 
-shell_exec("mkdir DNA/".$randomFolder);
+
+if (preg_match("/IonXpress_[\d]{3}/", $name, $matches))
+{
+	$new_name = $matches[0].'.'.$mime;
+
+	shell_exec("mkdir DNA/".$randomFolder);
 
 
-if(file_put_contents($uploaddir.$randomFolder.'/'.$name, $decodedData)) {
-    echo $randomFolder.'/'.$name.":uploaded successfully";
+	if(file_put_contents($uploaddir.$randomFolder.'/'.$new_name, $decodedData)) {
+	    echo $randomFolder.'/'.$new_name.":uploaded successfully";
+	}
+	else {
+	    // Show an error message should something go wrong.
+	    echo $name.":uploading failed";
+	}
+	
 }
-else {
-    // Show an error message should something go wrong.
-    echo $name.":uploading failed";
+else
+{
+	echo $name.":uploading failed";
 }
+
 
 
 ?>
